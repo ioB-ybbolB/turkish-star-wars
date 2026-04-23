@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Turkish Star Wars</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: black;
+      overflow: hidden;
+    }
+
+    #player {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body>
+
+<video id="player" controls autoplay></video>
+
+<script>
+async function loadVideo() {
+  const parts = [];
+
+  for (let i = 1; i <= 21; i++) {
+    const num = String(i).padStart(2, '0');
+    const filename = `TurkishLionmanCompressed-desktop_512kb.mp4.part${num}`;
+
+    const res = await fetch(filename);
+    const buffer = await res.arrayBuffer();
+    parts.push(buffer);
+  }
+
+  const mergedBlob = new Blob(parts, { type: "video/mp4" });
+  const videoURL = URL.createObjectURL(mergedBlob);
+
+  document.getElementById("player").src = videoURL;
+}
+
+loadVideo();
+</script>
+
+</body>
+</html>
