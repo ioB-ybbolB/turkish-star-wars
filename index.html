@@ -9,6 +9,8 @@
       height: 100%;
       background: black;
       overflow: hidden;
+      color: white;
+      font-family: sans-serif;
     }
 
     #player {
@@ -18,6 +20,32 @@
       width: 100vw;
       height: 100vh;
       object-fit: cover;
+      display: none;
+    }
+
+    #loader {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 60%;
+      text-align: center;
+    }
+
+    #barContainer {
+      width: 100%;
+      height: 20px;
+      background: #222;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    #bar {
+      height: 100%;
+      width: 0%;
+      background: lime;
+      transition: width 0.1s;
     }
   </style>
 </head>
@@ -25,23 +53,61 @@
 
 <video id="player" controls autoplay></video>
 
+<div id="loader">
+  <div>Loading movie... <span id="percent">0%</span></div>
+  <div id="barContainer">
+    <div id="bar"></div>
+  </div>
+</div>
+
 <script>
 async function loadVideo() {
+  const totalParts = 21;
   const parts = [];
 
-  for (let i = 1; i <= 21; i++) {
+  let totalBytes = 0;
+  let loadedBytes = 0;
+
+  for (let i = 1; i <= totalParts; i++) {
+    const num = String(i).padStart(2, '0');
+    const filename = `TurkishLionmanCompressed-desktop_512kb.mp4.part${num}`;
+
+    const res = await fetch(filename, { method: 'HEAD' });
+    const size = parseInt(res.headers.get('Content-Length')) || 0;
+    totalBytes += size;
+  }
+
+  for (let i = 1; i <= totalParts; i++) {
     const num = String(i).padStart(2, '0');
     const filename = `TurkishLionmanCompressed-desktop_512kb.mp4.part${num}`;
 
     const res = await fetch(filename);
-    const buffer = await res.arrayBuffer();
-    parts.push(buffer);
+    const reader = res.body.getReader();
+    let chunks = [];
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      chunks.push(value);
+      loadedBytes += value.length;
+
+      const percent = Math.round((loadedBytes / totalBytes) * 100);
+      document.getElementById("bar").style.width = percent + "%";
+      document.getElementById("percent").textContent = percent + "%";
+    }
+
+    parts.push(new Blob(chunks));
   }
 
   const mergedBlob = new Blob(parts, { type: "video/mp4" });
   const videoURL = URL.createObjectURL(mergedBlob);
 
-  document.getElementById("player").src = videoURL;
+  const player = document.getElementById("player");
+  player.src = videoURL;
+
+  document.getElementById("loader").style.display = "none";
+  player.style.display = "block";
 }
 
 loadVideo();
